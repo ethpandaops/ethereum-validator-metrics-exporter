@@ -1,0 +1,21 @@
+global:
+  logging: "debug" # panic,fatal,warm,info,debug,trace
+  metricsAddr: ":9090"
+  namespace: eth_validator
+  checkInterval: 24h
+  # optional labels applied to all metrics
+  labels:
+    extra: label
+
+beaconcha_in:
+  endpoint: https://beaconcha.in
+  apikey: 123
+
+validators:
+  - pubkey: 0x1234
+    labels:
+      type: acquaintance
+      company: NSA
+  - pubkey: 0x2345
+    labels:
+      extra: something
