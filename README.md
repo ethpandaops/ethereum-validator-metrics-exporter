@@ -29,7 +29,7 @@ Ethereum Validator Metrics Exporter relies entirely on a single `yaml` config fi
 | global.logging | `warn` | Log level (`panic`, `fatal`, `warn`, `info`, `debug`, `trace`) |
 | global.metricsAddr | `:9090` | The address the metrics server will listen on |
 | global.namespace | `eth_validator` | The prefix added to every metric |
-| global.checkInterval | `15s` | How often the service should check the beaconcha.in API |
+| global.checkInterval | `24h` | How often the service should check the beaconcha.in API |
 | global.labels[] |  | Key value pair of labels to add to every metric (optional) |
 | beaconcha_in.endpoint | `https://beaconcha.in` | The endpoint of the beaconcha.in API |
 | beaconcha_in.apikey |  | The API key for the beaconcha.in API |
