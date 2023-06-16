@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	ChunkSize                         = 2
+	ChunkSize                         = 100
 	LabelPubkey                string = "pubkey"
 	LabelWithdrawalCredentials string = "withdrawal_credentials"
 	LabelStatus                string = "status"
