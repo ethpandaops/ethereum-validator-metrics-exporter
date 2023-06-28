@@ -9,7 +9,6 @@ import (
 )
 
 const (
-	ChunkSize                         = 100
 	LabelPubkey                string = "pubkey"
 	LabelWithdrawalCredentials string = "withdrawal_credentials"
 	LabelStatus                string = "status"
@@ -17,13 +16,14 @@ const (
 )
 
 type Client struct {
-	log             logrus.FieldLogger
-	checkInterval   time.Duration
-	validators      map[string]*Config
-	validatorChunks [][]string
-	labelsMap       map[string]int
-	beaconchain     api.Client
-	metrics         Metrics
+	log                   logrus.FieldLogger
+	checkInterval         time.Duration
+	validators            map[string]*Config
+	validatorChunks       [][]string
+	validatorRequestDelay time.Duration
+	labelsMap             map[string]int
+	beaconchain           api.Client
+	metrics               Metrics
 }
 
 // NewClient creates a new validators instance
@@ -55,8 +55,8 @@ func NewClient(log logrus.FieldLogger, validators []*Config, checkInterval time.
 		labels[index] = label
 	}
 
-	for i := 0; i < len(keys); i += ChunkSize {
-		end := i + ChunkSize
+	for i := 0; i < len(keys); i += beaconchain.GetBatchSize() {
+		end := i + beaconchain.GetBatchSize()
 		if end > len(keys) {
 			end = len(keys)
 		}
@@ -65,13 +65,14 @@ func NewClient(log logrus.FieldLogger, validators []*Config, checkInterval time.
 	}
 
 	instance := Client{
-		log:             log.WithField("module", "validators"),
-		validators:      validatorsMap,
-		validatorChunks: chunks,
-		beaconchain:     beaconchain,
-		checkInterval:   checkInterval,
-		labelsMap:       labelsMap,
-		metrics:         NewMetrics(namespace, constLabels, labels),
+		log:                   log.WithField("module", "validators"),
+		validators:            validatorsMap,
+		validatorChunks:       chunks,
+		validatorRequestDelay: time.Minute / time.Duration(beaconchain.GetMaxRequestsPerMinute()),
+		beaconchain:           beaconchain,
+		checkInterval:         checkInterval,
+		labelsMap:             labelsMap,
+		metrics:               NewMetrics(namespace, constLabels, labels),
 	}
 
 	return &instance
@@ -92,14 +93,37 @@ func (c *Client) Start(ctx context.Context) {
 }
 
 func (c *Client) tick(ctx context.Context) {
+	c.log.Debug("Starting validators update")
+
+	ticker := time.NewTicker(c.validatorRequestDelay)
+	defer ticker.Stop()
+
 	for i, chunk := range c.validatorChunks {
-		c.log.WithField("chunk", i).Debug("Processing pubkeys")
+		c.log.WithFields(logrus.Fields{
+			"chunk":  i,
+			"length": len(chunk),
+		}).Debug("Processing validator pubkeys chunk")
+
 		err := c.getValidators(ctx, chunk)
 
 		if err != nil {
 			c.log.WithError(err).WithField("pubkeys", chunk).Error("Error updating validators")
 		}
+
+		// Don't delay after the last chunk
+		if i == len(c.validatorChunks)-1 {
+			break
+		}
+
+		c.log.WithField("delay", c.validatorRequestDelay).Debug("Delaying request for next validator chunk")
+		select {
+		case <-ticker.C:
+		case <-ctx.Done():
+			return
+		}
 	}
+
+	c.log.Debug("Finished validators update")
 }
 
 func (c *Client) getLabelValues(data *api.Validator) []string {

@@ -10,6 +10,8 @@ global:
 beaconcha_in:
   endpoint: https://beaconcha.in
   apikey: 123
+  maxRequestsPerMinute: 10
+  batchSize: 50
 
 validators:
   - pubkey: 0x1234

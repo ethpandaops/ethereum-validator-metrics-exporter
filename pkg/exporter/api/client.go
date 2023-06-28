@@ -13,22 +13,30 @@ type Client interface {
 	GetValidators(ctx context.Context, pubkeys []string) (map[string]*Validator, error)
 	// GetValidator returns a validator
 	GetValidator(ctx context.Context, pubkey string) (*Validator, error)
+	// GetBatchSize returns the batch size
+	GetBatchSize() int
+	// GetMaxRequestsPerMinute returns the max requests per minute
+	GetMaxRequestsPerMinute() int
 }
 
 type client struct {
-	log     logrus.FieldLogger
-	url     string
-	apikey  string
-	metrics Metrics
+	log                  logrus.FieldLogger
+	url                  string
+	apikey               string
+	batchSize            int
+	maxRequestsPerMinute int
+	metrics              Metrics
 }
 
 // NewClient creates a new beaconchain instance
 func NewClient(log logrus.FieldLogger, conf *Config, namespace string) Client {
 	return &client{
-		log:     log.WithField("module", "beaconchain"),
-		url:     conf.Endpoint,
-		apikey:  conf.APIKey,
-		metrics: NewMetrics(fmt.Sprintf("%s_%s", namespace, "http")),
+		log:                  log.WithField("module", "beaconchain"),
+		url:                  conf.Endpoint,
+		apikey:               conf.APIKey,
+		batchSize:            conf.BatchSize,
+		maxRequestsPerMinute: conf.MaxRequestsPerMinute,
+		metrics:              NewMetrics(fmt.Sprintf("%s_%s", namespace, "http")),
 	}
 }
 
@@ -67,4 +75,12 @@ func (c *client) GetValidator(ctx context.Context, pubkey string) (*Validator, e
 	}
 
 	return &response.Data, nil
+}
+
+func (c *client) GetBatchSize() int {
+	return c.batchSize
+}
+
+func (c *client) GetMaxRequestsPerMinute() int {
+	return c.maxRequestsPerMinute
 }
