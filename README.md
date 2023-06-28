@@ -33,6 +33,8 @@ Ethereum Validator Metrics Exporter relies entirely on a single `yaml` config fi
 | global.labels[] |  | Key value pair of labels to add to every metric (optional) |
 | beaconcha_in.endpoint | `https://beaconcha.in` | The endpoint of the beaconcha.in API |
 | beaconcha_in.apikey |  | The API key for the beaconcha.in API |
+| beaconcha_in.maxRequestsPerMinute | `10` | The maximum number of requests per minute to the beaconcha.in API. Raise higher if on paid plan. |
+| beaconcha_in.batchSize | `50` | The number of validators to request per batch. Max is `100` but may run into 414 URI too long on requests. |
 | validators[] |  | List of validators |
 | validators[].pubkey |  | The validator public key |
 | validators[].labels[] |  | Key value pair of labels to add to this validator only (optional) |
