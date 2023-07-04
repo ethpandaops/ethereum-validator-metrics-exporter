@@ -9,10 +9,8 @@ import (
 )
 
 const (
-	LabelPubkey                string = "pubkey"
-	LabelWithdrawalCredentials string = "withdrawal_credentials"
-	LabelStatus                string = "status"
-	LabelDefaultValue          string = ""
+	LabelPubkey       string = "pubkey"
+	LabelDefaultValue string = ""
 )
 
 type Client struct {
@@ -30,8 +28,6 @@ type Client struct {
 func NewClient(log logrus.FieldLogger, validators []*Config, checkInterval time.Duration, namespace string, constLabels map[string]string, beaconchain api.Client) *Client {
 	labelsMap := map[string]int{}
 	labelsMap[LabelPubkey] = 0
-	labelsMap[LabelWithdrawalCredentials] = 1
-	labelsMap[LabelStatus] = 2
 
 	validatorsMap := map[string]*Config{}
 
@@ -137,10 +133,6 @@ func (c *Client) getLabelValues(data *api.Validator) []string {
 			switch label {
 			case LabelPubkey:
 				values[index] = data.Pubkey
-			case LabelWithdrawalCredentials:
-				values[index] = data.WithdrawalCredentials[:4]
-			case LabelStatus:
-				values[index] = data.Status
 			default:
 				values[index] = LabelDefaultValue
 			}
@@ -185,6 +177,25 @@ func (c *Client) updateValidatorMetrics(data *api.Validator) {
 
 	labels := c.getLabelValues(data)
 	c.metrics.UpdateBalance(float64(data.Balance), labels)
+
+	exited := float64(0)
+	if data.IsExited() {
+		exited = float64(1)
+	}
+
+	c.metrics.UpdateExited(exited, labels)
+
+	credentialsCode, err := data.GetWithdrawalCredentialsCode()
+	if err != nil {
+		c.log.WithError(err).WithField("credentials", data.WithdrawalCredentials).Error("Error parsing withdrawal credentials")
+	}
+
+	code := float64(0)
+	if credentialsCode != nil {
+		code = float64(*credentialsCode)
+	}
+
+	c.metrics.UpdateCredentialsCode(code, labels)
 	c.metrics.UpdateLastAttestationSlot(float64(data.LastAttestationSlot), labels)
 	c.metrics.UpdateTotalWithdrawals(float64(data.TotalWithdrawals), labels)
 }
