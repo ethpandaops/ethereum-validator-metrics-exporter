@@ -1,5 +1,7 @@
 package api
 
+import "strconv"
+
 type Response[T any] struct {
 	Data   T      `json:"data"`
 	Status string `json:"status"`
@@ -20,4 +22,17 @@ type Validator struct {
 	WithdrawableEpoch          int    `json:"withdrawableepoch"`
 	WithdrawalCredentials      string `json:"withdrawalcredentials"`
 	TotalWithdrawals           int    `json:"total_withdrawals"`
+}
+
+func (v *Validator) GetWithdrawalCredentialsCode() (*int64, error) {
+	i64, err := strconv.ParseInt(v.WithdrawalCredentials[:4], 0, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	return &i64, nil
+}
+
+func (v *Validator) IsExited() bool {
+	return v.Status == "exited"
 }
